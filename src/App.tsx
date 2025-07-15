@@ -1,13 +1,123 @@
-import React, { Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import React, { Suspense, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
   useGLTF,
   SpotLight,
   AccumulativeShadows,
   RandomizedLight,
+  Text,
 } from "@react-three/drei";
+import * as THREE from "three";
 import "./App.css";
+
+interface TerritoryNodeProps {
+  position: [number, number, number];
+  color?: string;
+  occupied?: boolean;
+  troops?: number;
+}
+
+function TerritoryNode({
+  position,
+  color = "#808080",
+  occupied = false,
+  troops = 0,
+}: TerritoryNodeProps) {
+  const glowRef = useRef<THREE.Mesh>(null);
+  const sphereRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (glowRef.current) {
+      glowRef.current.scale.setScalar(
+        1 + Math.sin(state.clock.elapsedTime * 2) * 0.1
+      );
+    }
+  });
+
+  return (
+    <group position={position}>
+      {/* Main sphere */}
+      <mesh ref={sphereRef}>
+        <sphereGeometry args={[0.2, 32, 32]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.5}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+
+      {/* Glow effect */}
+      <mesh ref={glowRef}>
+        <sphereGeometry args={[0.3, 32, 32]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.2}
+          side={THREE.BackSide}
+        />
+      </mesh>
+
+      {occupied && (
+        <Text
+          position={[0, 0, 0.3]}
+          fontSize={0.3}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {troops}
+        </Text>
+      )}
+    </group>
+  );
+}
+
+function CoordinateHelper() {
+  const [point, setPoint] = useState<THREE.Vector3 | null>(null);
+  const { camera, raycaster, pointer } = useThree();
+
+  useFrame(() => {
+    // Update the raycaster with current mouse position
+    raycaster.setFromCamera(pointer, camera);
+
+    // Create a plane that matches the game board's orientation
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersectionPoint = new THREE.Vector3();
+
+    // Find intersection with the plane
+    raycaster.ray.intersectPlane(plane, intersectionPoint);
+    setPoint(intersectionPoint);
+  });
+
+  return (
+    <>
+      {point && (
+        <group position={[0, 2, 0]}>
+          <Text
+            position={[0, 0, 0]}
+            fontSize={0.2}
+            color="white"
+            anchorX="left"
+            anchorY="middle"
+          >
+            {`X: ${point.x.toFixed(2)}, Y: ${point.y.toFixed(
+              2
+            )}, Z: ${point.z.toFixed(2)}`}
+          </Text>
+        </group>
+      )}
+      {point && (
+        <mesh position={point.toArray()}>
+          <sphereGeometry args={[0.05, 16, 16]} />
+          <meshBasicMaterial color="red" />
+        </mesh>
+      )}
+    </>
+  );
+}
 
 function RiskTable() {
   const { scene } = useGLTF("/models/risk-table.glb");
@@ -27,7 +137,13 @@ function Scene() {
     <>
       <RiskTable />
 
-      {/* Brighter ambient light for better overall visibility */}
+      {/* Example territory node for Alaska */}
+      <TerritoryNode position={[-2.5, 0.1, 0]} />
+
+      {/* Coordinate helper */}
+      <CoordinateHelper />
+
+      {/* Very dim ambient light for minimal fill */}
       <ambientLight intensity={0.4} />
 
       {/* Main dramatic spotlight with increased intensity and focus */}
