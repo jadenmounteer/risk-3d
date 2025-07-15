@@ -38,30 +38,40 @@ function TerritoryNode({
   return (
     <group position={position} rotation={[-Math.PI / 2, 0, 0]}>
       {/* Main ring */}
-      <mesh ref={ringRef}>
+      <mesh ref={ringRef} renderOrder={1}>
         <ringGeometry args={[0.08, 0.1, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.9} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.9}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
       {/* Inner glow */}
-      <mesh ref={glowRef} position={[0, 0, -0.005]}>
+      <mesh ref={glowRef} position={[0, 0, -0.005]} renderOrder={1}>
         <ringGeometry args={[0.07, 0.11, 32]} />
         <meshBasicMaterial
           color={color}
           transparent
           opacity={0.2}
           blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
         />
       </mesh>
 
       {/* Outer glow */}
-      <mesh position={[0, 0, -0.01]}>
+      <mesh position={[0, 0, -0.01]} renderOrder={1}>
         <ringGeometry args={[0.06, 0.12, 32]} />
         <meshBasicMaterial
           color={color}
           transparent
           opacity={0.1}
           blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
         />
       </mesh>
 
@@ -73,6 +83,7 @@ function TerritoryNode({
           anchorX="center"
           anchorY="middle"
           rotation={[Math.PI / 2, 0, 0]}
+          renderOrder={2}
         >
           {troops}
         </Text>
@@ -144,10 +155,10 @@ function Scene() {
       <RiskTable />
 
       {/* Territory node for Alaska */}
-      <TerritoryNode position={[-1.35, 0.49, 2.58]} />
+      <TerritoryNode position={[-1.35, 0.5, 2.58]} />
 
-      {/* Coordinate helper */}
-      <CoordinateHelper />
+      {/* Coordinate helper - commented out for now */}
+      {/* <CoordinateHelper /> */}
 
       {/* Very dim ambient light for minimal fill */}
       <ambientLight intensity={0.4} />
