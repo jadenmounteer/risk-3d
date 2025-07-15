@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/risk-3d/static/css/main.62726aff.css",
-    "main.js": "/risk-3d/static/js/main.feac4f21.js",
+    "main.js": "/risk-3d/static/js/main.ab6c3d26.js",
     "static/js/453.ba985ae7.chunk.js": "/risk-3d/static/js/453.ba985ae7.chunk.js",
     "index.html": "/risk-3d/index.html",
     "main.62726aff.css.map": "/risk-3d/static/css/main.62726aff.css.map",
-    "main.feac4f21.js.map": "/risk-3d/static/js/main.feac4f21.js.map",
+    "main.ab6c3d26.js.map": "/risk-3d/static/js/main.ab6c3d26.js.map",
     "453.ba985ae7.chunk.js.map": "/risk-3d/static/js/453.ba985ae7.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.62726aff.css",
-    "static/js/main.feac4f21.js"
+    "static/js/main.ab6c3d26.js"
   ]
 }
