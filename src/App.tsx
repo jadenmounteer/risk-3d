@@ -1,16 +1,17 @@
 import React, { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import "./App.css";
+
+function RiskTable() {
+  const { scene } = useGLTF("/models/risk-table.glb");
+  return <primitive object={scene} position={[0, 0, 1]} scale={1} />;
+}
 
 function Scene() {
   return (
     <>
-      {/* Temporary placeholder for table */}
-      <mesh position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[10, 10]} />
-        <meshStandardMaterial color="#f0d6b3" />
-      </mesh>
+      <RiskTable />
 
       {/* Add ambient and directional light */}
       <ambientLight intensity={0.5} />
@@ -27,6 +28,9 @@ function Scene() {
     </>
   );
 }
+
+// Pre-load the model
+useGLTF.preload("/models/risk-table.glb");
 
 function App() {
   return (
