@@ -144,7 +144,7 @@ function Scene() {
       <RiskTable />
 
       {/* Territory node for Alaska */}
-      <TerritoryNode position={[-1.35, 0.6, 2.5]} />
+      <TerritoryNode position={[-1.35, 0.49, 2.58]} />
 
       {/* Coordinate helper */}
       <CoordinateHelper />
