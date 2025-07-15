@@ -25,7 +25,7 @@ function TerritoryNode({
   troops = 0,
 }: TerritoryNodeProps) {
   const glowRef = useRef<THREE.Mesh>(null);
-  const sphereRef = useRef<THREE.Mesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
     if (glowRef.current) {
@@ -36,37 +36,43 @@ function TerritoryNode({
   });
 
   return (
-    <group position={position}>
-      {/* Main sphere */}
-      <mesh ref={sphereRef}>
-        <sphereGeometry args={[0.2, 32, 32]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.5}
-          transparent
-          opacity={0.8}
-        />
+    <group position={position} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Main ring */}
+      <mesh ref={ringRef}>
+        <ringGeometry args={[0.08, 0.1, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.9} />
       </mesh>
 
-      {/* Glow effect */}
-      <mesh ref={glowRef}>
-        <sphereGeometry args={[0.3, 32, 32]} />
+      {/* Inner glow */}
+      <mesh ref={glowRef} position={[0, 0, -0.005]}>
+        <ringGeometry args={[0.07, 0.11, 32]} />
         <meshBasicMaterial
           color={color}
           transparent
           opacity={0.2}
-          side={THREE.BackSide}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Outer glow */}
+      <mesh position={[0, 0, -0.01]}>
+        <ringGeometry args={[0.06, 0.12, 32]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.1}
+          blending={THREE.AdditiveBlending}
         />
       </mesh>
 
       {occupied && (
         <Text
-          position={[0, 0, 0.3]}
-          fontSize={0.3}
+          position={[0, 0, 0.1]}
+          fontSize={0.15}
           color="white"
           anchorX="center"
           anchorY="middle"
+          rotation={[Math.PI / 2, 0, 0]}
         >
           {troops}
         </Text>
@@ -137,8 +143,8 @@ function Scene() {
     <>
       <RiskTable />
 
-      {/* Example territory node for Alaska */}
-      <TerritoryNode position={[-2.5, 0.1, 0]} />
+      {/* Territory node for Alaska */}
+      <TerritoryNode position={[-1.35, 0.6, 2.5]} />
 
       {/* Coordinate helper */}
       <CoordinateHelper />
