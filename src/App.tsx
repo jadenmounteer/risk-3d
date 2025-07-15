@@ -126,7 +126,7 @@ function CoordinateHelper() {
 }
 
 function RiskTable() {
-  const { scene } = useGLTF("/models/risk-table.glb");
+  const { scene } = useGLTF(process.env.PUBLIC_URL + "/models/risk-table.glb");
   return (
     <primitive
       object={scene}
@@ -186,7 +186,7 @@ function Scene() {
 }
 
 // Pre-load the model
-useGLTF.preload("/models/risk-table.glb");
+useGLTF.preload(process.env.PUBLIC_URL + "/models/risk-table.glb");
 
 function App() {
   return (
