@@ -35,7 +35,7 @@ function Scene() {
         position={[0, 8, 0]}
         angle={0.5}
         penumbra={0.2}
-        intensity={15}
+        intensity={80}
         castShadow
         shadow-mapSize={2048}
         color="#fff5e6"
