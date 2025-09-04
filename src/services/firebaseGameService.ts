@@ -1,14 +1,5 @@
-import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  onSnapshot,
-  collection,
-  query,
-  where,
-} from "firebase/firestore";
-import { db, ensureAnonymousAuth } from "./firebase";
+import { doc, setDoc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import { db, ensureAnonymousAuth, setAdminSession } from "./firebase";
 import { GameService, GameState, Player } from "../types/game";
 import { TeamId } from "../types/territory";
 import { TERRITORIES } from "../constants/territories";
@@ -37,6 +28,7 @@ export const firebaseGameService: GameService = {
   loginAdmin: async (password: string) => {
     const hashedPassword = await hashPassword(password);
     if (hashedPassword === ADMIN_PASSWORD_HASH) {
+      await setAdminSession(true);
       isAdminLoggedIn = true;
     } else {
       throw new Error("Invalid password");
@@ -44,6 +36,7 @@ export const firebaseGameService: GameService = {
   },
 
   logoutAdmin: async () => {
+    await setAdminSession(false);
     isAdminLoggedIn = false;
   },
 

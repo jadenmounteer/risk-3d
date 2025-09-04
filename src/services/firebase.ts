@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
 const firebaseConfig = {
@@ -26,4 +26,21 @@ export const ensureAnonymousAuth = async () => {
     await signInAnonymously(auth);
   }
   return auth.currentUser;
+};
+
+// Helper function to set admin session
+export const setAdminSession = async (isAdmin: boolean) => {
+  const user = await ensureAnonymousAuth();
+  if (!user) throw new Error("No authenticated user");
+
+  if (isAdmin) {
+    // Create admin session document
+    await setDoc(doc(db, "admin_sessions", user.uid), {
+      createdAt: new Date(),
+      lastActive: new Date(),
+    });
+  } else {
+    // Remove admin session document
+    await deleteDoc(doc(db, "admin_sessions", user.uid));
+  }
 };
