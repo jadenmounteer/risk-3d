@@ -10,6 +10,7 @@ import {
 import * as THREE from "three";
 import { TerritoryContainer } from "./components/territory/TerritoryContainer";
 import { GameProvider } from "./contexts/GameContext";
+import { AdminPanel } from "./components/admin/AdminPanel";
 import "./App.css";
 
 function RiskTable() {
@@ -70,12 +71,10 @@ function Scene() {
 useGLTF.preload(process.env.PUBLIC_URL + "/models/risk-table.glb");
 
 function App() {
-  // For now, we'll use a mock game ID. Later this will come from Firebase
-  const gameId = "mock-game";
-
   return (
-    <GameProvider gameId={gameId}>
+    <GameProvider>
       <div style={{ width: "100vw", height: "100vh", background: "#1a1a1a" }}>
+        <AdminPanel />
         <Canvas camera={{ position: [0, 5, 10], fov: 50 }} shadows>
           <color attach="background" args={["#1a1a1a"]} />
           <fog attach="fog" args={["#1a1a1a", 8, 30]} />

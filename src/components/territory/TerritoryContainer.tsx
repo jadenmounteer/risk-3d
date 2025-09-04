@@ -26,7 +26,6 @@ export const TerritoryContainer: React.FC = () => {
         // During setup, claim unoccupied territories
         if (gameState.territories[territoryId].teamId === "unoccupied") {
           await gameService.claimTerritory(
-            gameState.id,
             territoryId,
             gameState.currentTurnPlayerId
           );
@@ -39,7 +38,7 @@ export const TerritoryContainer: React.FC = () => {
           gameState.players.find((p) => p.id === gameState.currentTurnPlayerId)
             ?.teamId
         ) {
-          await gameService.placeTroops(gameState.id, territoryId, 1);
+          await gameService.placeTroops(territoryId, 1);
         }
         break;
       // Add other phases later (ATTACK, FORTIFY)

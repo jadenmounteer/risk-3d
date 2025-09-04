@@ -1,5 +1,6 @@
 import { GameService, GameState, Player } from "../types/game";
 import { TERRITORIES } from "../constants/territories";
+import { TeamId } from "../types/territory";
 
 // In-memory storage for our mock service
 let mockGameState: GameState = {
@@ -10,6 +11,7 @@ let mockGameState: GameState = {
   territories: Object.fromEntries(
     TERRITORIES.map((territory) => [territory.id, territory])
   ),
+  lastUpdated: Date.now(),
 };
 
 // Mock subscribers
@@ -20,31 +22,32 @@ const notifySubscribers = () => {
   subscribers.forEach((callback) => callback({ ...mockGameState }));
 };
 
+// Mock admin state
+let isAdminLoggedIn = false;
+
 export const mockGameService: GameService = {
-  createGame: async (players: Player[]) => {
-    mockGameState = {
-      ...mockGameState,
-      players,
-      currentTurnPlayerId: players[0].id,
-      phase: "SETUP",
-    };
-    notifySubscribers();
-    return mockGameState.id;
+  // Admin authentication
+  loginAdmin: async (email: string, password: string) => {
+    // Mock login - in real app this would validate with Firebase
+    if (email === "admin@example.com" && password === "password") {
+      isAdminLoggedIn = true;
+    } else {
+      throw new Error("Invalid credentials");
+    }
   },
 
-  joinGame: async (gameId: string, player: Player) => {
-    mockGameState.players.push(player);
-    notifySubscribers();
+  logoutAdmin: async () => {
+    isAdminLoggedIn = false;
   },
 
-  getGameState: async (gameId: string) => {
+  isAdmin: () => isAdminLoggedIn,
+
+  // Game state
+  getGameState: async () => {
     return { ...mockGameState };
   },
 
-  subscribeToGameState: (
-    gameId: string,
-    callback: (state: GameState) => void
-  ) => {
+  subscribeToGameState: (callback: (state: GameState) => void) => {
     subscribers.push(callback);
     // Initial callback with current state
     callback({ ...mockGameState });
@@ -57,11 +60,9 @@ export const mockGameService: GameService = {
     };
   },
 
-  claimTerritory: async (
-    gameId: string,
-    territoryId: string,
-    playerId: string
-  ) => {
+  // Game actions
+  claimTerritory: async (territoryId: string, playerId: string) => {
+    if (!isAdminLoggedIn) throw new Error("Admin only action");
     const player = mockGameState.players.find((p) => p.id === playerId);
     if (!player) throw new Error("Player not found");
 
@@ -70,26 +71,27 @@ export const mockGameService: GameService = {
       teamId: player.teamId,
       troops: 1,
     };
+    mockGameState.lastUpdated = Date.now();
     notifySubscribers();
   },
 
-  placeTroops: async (gameId: string, territoryId: string, troops: number) => {
+  placeTroops: async (territoryId: string, troops: number) => {
+    if (!isAdminLoggedIn) throw new Error("Admin only action");
     const territory = mockGameState.territories[territoryId];
     mockGameState.territories[territoryId] = {
       ...territory,
       troops: territory.troops + troops,
     };
+    mockGameState.lastUpdated = Date.now();
     notifySubscribers();
   },
 
   attack: async (
-    gameId: string,
     fromTerritoryId: string,
     toTerritoryId: string,
     troops: number
   ) => {
-    // Implement mock attack logic
-    // For now, just transfer troops and ownership
+    if (!isAdminLoggedIn) throw new Error("Admin only action");
     const fromTerritory = mockGameState.territories[fromTerritoryId];
     mockGameState.territories[toTerritoryId] = {
       ...mockGameState.territories[toTerritoryId],
@@ -100,15 +102,16 @@ export const mockGameService: GameService = {
       ...fromTerritory,
       troops: fromTerritory.troops - troops,
     };
+    mockGameState.lastUpdated = Date.now();
     notifySubscribers();
   },
 
   fortify: async (
-    gameId: string,
     fromTerritoryId: string,
     toTerritoryId: string,
     troops: number
   ) => {
+    if (!isAdminLoggedIn) throw new Error("Admin only action");
     const fromTerritory = mockGameState.territories[fromTerritoryId];
     const toTerritory = mockGameState.territories[toTerritoryId];
 
@@ -120,10 +123,12 @@ export const mockGameService: GameService = {
       ...toTerritory,
       troops: toTerritory.troops + troops,
     };
+    mockGameState.lastUpdated = Date.now();
     notifySubscribers();
   },
 
-  endTurn: async (gameId: string) => {
+  endTurn: async () => {
+    if (!isAdminLoggedIn) throw new Error("Admin only action");
     const currentPlayerIndex = mockGameState.players.findIndex(
       (p) => p.id === mockGameState.currentTurnPlayerId
     );
@@ -131,6 +136,83 @@ export const mockGameService: GameService = {
       (currentPlayerIndex + 1) % mockGameState.players.length;
     mockGameState.currentTurnPlayerId =
       mockGameState.players[nextPlayerIndex].id;
+    mockGameState.lastUpdated = Date.now();
     notifySubscribers();
+  },
+
+  // Admin actions
+  admin: {
+    addPlayer: async (name: string, teamId: TeamId) => {
+      if (!isAdminLoggedIn) throw new Error("Admin only action");
+      const newPlayer: Player = {
+        id: `player-${Date.now()}`,
+        name,
+        teamId,
+        bonusTroops: 0,
+      };
+      mockGameState.players.push(newPlayer);
+      if (!mockGameState.currentTurnPlayerId) {
+        mockGameState.currentTurnPlayerId = newPlayer.id;
+      }
+      mockGameState.lastUpdated = Date.now();
+      notifySubscribers();
+    },
+
+    removePlayer: async (playerId: string) => {
+      if (!isAdminLoggedIn) throw new Error("Admin only action");
+      mockGameState.players = mockGameState.players.filter(
+        (p) => p.id !== playerId
+      );
+      mockGameState.lastUpdated = Date.now();
+      notifySubscribers();
+    },
+
+    addBonusTroops: async (playerId: string, amount: number) => {
+      if (!isAdminLoggedIn) throw new Error("Admin only action");
+      const player = mockGameState.players.find((p) => p.id === playerId);
+      if (player) {
+        player.bonusTroops += amount;
+        mockGameState.lastUpdated = Date.now();
+        notifySubscribers();
+      }
+    },
+
+    startNewGame: async () => {
+      if (!isAdminLoggedIn) throw new Error("Admin only action");
+      mockGameState.phase = "SETUP";
+      mockGameState.territories = Object.fromEntries(
+        TERRITORIES.map((territory) => [
+          territory.id,
+          { ...territory, troops: 0, teamId: "unoccupied" },
+        ])
+      );
+      if (mockGameState.players.length > 0) {
+        mockGameState.currentTurnPlayerId = mockGameState.players[0].id;
+      }
+      mockGameState.lastUpdated = Date.now();
+      notifySubscribers();
+    },
+
+    setGamePhase: async (phase: GameState["phase"]) => {
+      if (!isAdminLoggedIn) throw new Error("Admin only action");
+      mockGameState.phase = phase;
+      mockGameState.lastUpdated = Date.now();
+      notifySubscribers();
+    },
+
+    resetGame: async () => {
+      if (!isAdminLoggedIn) throw new Error("Admin only action");
+      mockGameState = {
+        id: "mock-game",
+        currentTurnPlayerId: "",
+        phase: "SETUP",
+        players: [],
+        territories: Object.fromEntries(
+          TERRITORIES.map((territory) => [territory.id, territory])
+        ),
+        lastUpdated: Date.now(),
+      };
+      notifySubscribers();
+    },
   },
 };

@@ -4,6 +4,7 @@ export interface Player {
   id: string;
   name: string;
   teamId: TeamId;
+  bonusTroops: number; // Accumulated from sprint performance
 }
 
 export interface GameState {
@@ -13,42 +14,49 @@ export interface GameState {
   players: Player[];
   territories: Record<string, Territory>;
   winner?: string;
+  lastUpdated: number; // Timestamp for tracking changes
+}
+
+// Admin-specific actions
+export interface AdminActions {
+  // Player management
+  addPlayer: (name: string, teamId: TeamId) => Promise<void>;
+  removePlayer: (playerId: string) => Promise<void>;
+
+  // Sprint bonus management
+  addBonusTroops: (playerId: string, amount: number) => Promise<void>;
+
+  // Game control
+  startNewGame: () => Promise<void>;
+  setGamePhase: (phase: GameState["phase"]) => Promise<void>;
+  resetGame: () => Promise<void>;
 }
 
 export interface GameService {
-  // Game setup
-  createGame: (players: Player[]) => Promise<string>; // Returns game ID
-  joinGame: (gameId: string, player: Player) => Promise<void>;
+  // Admin authentication
+  loginAdmin: (email: string, password: string) => Promise<void>;
+  logoutAdmin: () => Promise<void>;
+  isAdmin: () => boolean;
 
   // Game state
-  getGameState: (gameId: string) => Promise<GameState>;
-  subscribeToGameState: (
-    gameId: string,
-    callback: (state: GameState) => void
-  ) => () => void;
+  getGameState: () => Promise<GameState>;
+  subscribeToGameState: (callback: (state: GameState) => void) => () => void;
 
-  // Game actions
-  claimTerritory: (
-    gameId: string,
-    territoryId: string,
-    playerId: string
-  ) => Promise<void>;
-  placeTroops: (
-    gameId: string,
-    territoryId: string,
-    troops: number
-  ) => Promise<void>;
+  // Game actions (only available to admin)
+  claimTerritory: (territoryId: string, playerId: string) => Promise<void>;
+  placeTroops: (territoryId: string, troops: number) => Promise<void>;
   attack: (
-    gameId: string,
     fromTerritoryId: string,
     toTerritoryId: string,
     troops: number
   ) => Promise<void>;
   fortify: (
-    gameId: string,
     fromTerritoryId: string,
     toTerritoryId: string,
     troops: number
   ) => Promise<void>;
-  endTurn: (gameId: string) => Promise<void>;
+  endTurn: () => Promise<void>;
+
+  // Admin actions
+  admin?: AdminActions;
 }

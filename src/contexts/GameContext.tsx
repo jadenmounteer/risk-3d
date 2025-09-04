@@ -13,28 +13,23 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 interface GameProviderProps {
   children: React.ReactNode;
-  gameId: string;
 }
 
-export const GameProvider: React.FC<GameProviderProps> = ({
-  children,
-  gameId,
-}) => {
+export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const unsubscribe = mockGameService.subscribeToGameState(
-      gameId,
-      (state) => {
+      (state: GameState) => {
         setGameState(state);
         setIsLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [gameId]);
+  }, []);
 
   const value = {
     gameService: mockGameService,

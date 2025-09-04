@@ -1,0 +1,118 @@
+.admin-panel-container {
+  position: fixed;
+  top: 0;
+  right: 20px;
+  z-index: 1000;
+  width: 300px; /* Set fixed width to match panel */
+}
+
+.admin-toggle {
+  position: relative; /* Changed from absolute */
+  margin: 0 auto;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  border-radius: 0 0 8px 8px;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  width: 40px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.admin-toggle:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.admin-toggle.expanded {
+  transform: rotate(180deg);
+}
+
+.admin-panel {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  border-radius: 8px;
+  color: white;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-20px);
+  transition: all 0.3s ease;
+  margin-top: 8px;
+}
+
+.admin-panel.expanded {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.admin-login {
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.admin-panel form,
+.admin-login form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.admin-panel input,
+.admin-panel select,
+.admin-login input {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #222;
+  color: white;
+}
+
+.admin-panel button,
+.admin-login button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background: #444;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-panel button:hover,
+.admin-login button:hover {
+  background: #555;
+}
+
+.admin-panel button:disabled {
+  background: #333;
+  cursor: not-allowed;
+}
+
+.game-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h2,
+h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+/* Make placeholder text more visible */
+input::placeholder {
+  color: #888;
+}
+
+/* Style the dropdown options */
+select option {
+  background-color: #222;
+  color: white;
+}
