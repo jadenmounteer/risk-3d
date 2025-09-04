@@ -13,6 +13,7 @@ export const AdminPanel: React.FC = () => {
   const [bonusTroops, setBonusTroops] = useState(0);
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
   const [loginError, setLoginError] = useState<string>("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +21,24 @@ export const AdminPanel: React.FC = () => {
     try {
       await gameService.loginAdmin(password);
       setPassword(""); // Clear password after successful login
+      setIsExpanded(true); // Expand panel on successful login
     } catch (error) {
       setLoginError("Invalid password");
       console.error("Login failed:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevent double-clicks
+
+    try {
+      setIsLoggingOut(true);
+      await gameService.logoutAdmin();
+      setIsExpanded(false); // Collapse panel on logout
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -54,7 +70,7 @@ export const AdminPanel: React.FC = () => {
     <div className="admin-panel-container">
       <button
         className={`admin-toggle ${isExpanded ? "expanded" : ""}`}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => !isLoggingOut && setIsExpanded(!isExpanded)}
       >
         ▼
       </button>
@@ -130,17 +146,19 @@ export const AdminPanel: React.FC = () => {
               <h3>Game Controls</h3>
               <button
                 onClick={() => gameService.admin?.startNewGame()}
-                disabled={!gameService.admin}
+                disabled={!gameService.admin || isLoggingOut}
               >
                 Start New Game
               </button>
               <button
                 onClick={() => gameService.admin?.resetGame()}
-                disabled={!gameService.admin}
+                disabled={!gameService.admin || isLoggingOut}
               >
                 Reset Game
               </button>
-              <button onClick={() => gameService.logoutAdmin()}>Logout</button>
+              <button onClick={handleLogout} disabled={isLoggingOut}>
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </button>
             </div>
           </>
         )}
