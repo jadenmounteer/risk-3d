@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { GameService, GameState } from "../types/game";
-import { mockGameService } from "../services/mockGameService";
+import { firebaseGameService } from "../services/firebaseGameService";
 
 interface GameContextType {
   gameService: GameService;
@@ -22,18 +22,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const unsubscribe = mockGameService.subscribeToGameState(
+    const unsubscribe = firebaseGameService.subscribeToGameState(
       (state: GameState) => {
         setGameState(state);
         setIsLoading(false);
       }
     );
 
+    // Initialize game if it doesn't exist
+    firebaseGameService.admin?.startNewGame().catch((error) => {
+      console.error("Error initializing game:", error);
+      setError(error);
+    });
+
     return () => unsubscribe();
   }, []);
 
   const value = {
-    gameService: mockGameService,
+    gameService: firebaseGameService,
     gameState,
     isLoading,
     error,
