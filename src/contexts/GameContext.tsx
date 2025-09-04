@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { GameService, GameState } from "../types/game";
 import { firebaseGameService } from "../services/firebaseGameService";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { TERRITORIES } from "../constants/territories";
 
 interface GameContextType {
   gameService: GameService;
-  gameState: GameState | null;
+  gameState: GameState;
   isLoading: boolean;
   error: Error | null;
   setError: (error: Error | null) => void;
@@ -19,7 +19,7 @@ interface GameProviderProps {
   children: React.ReactNode;
 }
 
-// Default game state that everyone sees
+// Default game state that everyone sees initially
 const DEFAULT_GAME_STATE: GameState = {
   id: "current_game",
   currentTurnPlayerId: "",
@@ -43,33 +43,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   useEffect(() => {
     const gameRef = doc(db, "games", "current_game");
 
-    // First, ensure the document exists with default state
-    setDoc(gameRef, DEFAULT_GAME_STATE, { merge: true })
-      .then(() => {
-        // Then subscribe to changes
-        const unsubscribe = onSnapshot(
-          gameRef,
-          (doc) => {
-            if (doc.exists()) {
-              setGameState(doc.data() as GameState);
-            }
-            setIsLoading(false);
-            setError(null);
-          },
-          (error) => {
-            console.error("Error subscribing to game state:", error);
-            setError(error as Error);
-            setIsLoading(false);
-          }
-        );
-
-        return () => unsubscribe();
-      })
-      .catch((error) => {
-        console.error("Error ensuring default game state:", error);
+    // Subscribe to changes
+    const unsubscribe = onSnapshot(
+      gameRef,
+      (doc) => {
+        if (doc.exists()) {
+          setGameState(doc.data() as GameState);
+        } else {
+          // If document doesn't exist, use default state
+          setGameState(DEFAULT_GAME_STATE);
+        }
+        setIsLoading(false);
+        setError(null);
+      },
+      (error) => {
+        console.error("Error subscribing to game state:", error);
         setError(error as Error);
         setIsLoading(false);
-      });
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const value = {
