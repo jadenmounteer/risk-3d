@@ -1,10 +1,12 @@
 import { doc, setDoc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import {
   db,
-  ensureAnonymousAuth,
+  auth,
   setAdminSession,
   cleanupUserSession,
+  checkAdminSession,
 } from "./firebase";
+import { signInAnonymously } from "firebase/auth";
 import { GameService, GameState, Player } from "../types/game";
 import { TeamId } from "../types/territory";
 import { TERRITORIES } from "../constants/territories";
@@ -25,32 +27,56 @@ const hashPassword = async (password: string) => {
   return hashHex;
 };
 
+// Start with a clean state - not logged in
 let isAdminLoggedIn = false;
 
 export const firebaseGameService: GameService = {
   // Admin authentication
   loginAdmin: async (password: string) => {
     try {
-      // First ensure we have anonymous auth
-      await ensureAnonymousAuth();
+      console.log("Starting admin login process...");
+
+      // Check if someone is already logged in
+      const adminExists = await checkAdminSession();
+      if (adminExists) {
+        console.log("Found existing admin session, cleaning up...");
+        await cleanupUserSession();
+        // Add a small delay to ensure cleanup completes
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
 
       const hashedPassword = await hashPassword(password);
+
       if (hashedPassword === ADMIN_PASSWORD_HASH) {
+        console.log("Password verified, creating anonymous session...");
+        // Create new anonymous session
+        const userCred = await signInAnonymously(auth);
+        console.log(`Anonymous session created: ${userCred.user.uid}`);
+
+        // Set up admin session
+        console.log("Setting up admin session...");
         await setAdminSession(true);
         isAdminLoggedIn = true;
+        console.log("Admin session created successfully");
       } else {
+        console.log("Invalid password attempt");
         throw new Error("Invalid password");
       }
     } catch (error) {
       console.error("Login failed:", error);
+      // If anything fails, make sure we're logged out
+      isAdminLoggedIn = false;
+      await cleanupUserSession().catch(console.error);
       throw error;
     }
   },
 
   logoutAdmin: async () => {
     try {
+      console.log("Starting admin logout process...");
       isAdminLoggedIn = false;
       await cleanupUserSession();
+      console.log("Admin logout completed successfully");
     } catch (error) {
       console.error("Logout failed:", error);
       throw error;
@@ -59,7 +85,7 @@ export const firebaseGameService: GameService = {
 
   isAdmin: () => isAdminLoggedIn,
 
-  // Game state
+  // [Rest of the service implementation remains the same...]
   getGameState: async () => {
     const gameRef = doc(db, "games", GAME_DOC_ID);
     const gameDoc = await getDoc(gameRef);
@@ -170,7 +196,6 @@ export const firebaseGameService: GameService = {
     });
   },
 
-  // Admin actions
   admin: {
     addPlayer: async (name: string, teamId: TeamId) => {
       if (!isAdminLoggedIn) throw new Error("Admin only action");

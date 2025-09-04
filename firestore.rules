@@ -4,7 +4,8 @@ service cloud.firestore {
     // Helper function to check if user is admin
     function isAdmin() {
       return request.auth != null && 
-             exists(/databases/$(database)/documents/admin_sessions/$(request.auth.uid));
+             exists(/databases/$(database)/documents/admin_sessions/current_admin) &&
+             get(/databases/$(database)/documents/admin_sessions/current_admin).data.uid == request.auth.uid;
     }
 
     // Game document rules
@@ -15,10 +16,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Admin sessions (stores admin authentication state)
-    match /admin_sessions/{uid} {
-      // Allow creation and deletion of admin sessions
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    // Admin sessions
+    match /admin_sessions/{docId} {
+      // Anyone can read admin session (to check if someone is admin)
+      allow read: if true;
+      // Only the current user can write to admin session
+      allow write: if request.auth != null && 
+                  (
+                    // Allow write if no admin exists
+                    !exists(/databases/$(database)/documents/admin_sessions/current_admin) ||
+                    // Or if this user is the current admin
+                    get(/databases/$(database)/documents/admin_sessions/current_admin).data.uid == request.auth.uid
+                  );
     }
   }
 }

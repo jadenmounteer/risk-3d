@@ -6,14 +6,7 @@ import {
   deleteDoc,
   getDoc,
 } from "firebase/firestore";
-import {
-  getAuth,
-  signInAnonymously,
-  onAuthStateChanged,
-  User,
-  signOut,
-  deleteUser,
-} from "firebase/auth";
+import { getAuth, signInAnonymously, signOut } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBAdXNYeq2Hqtw7PiNGkdX6DVvg5mWkNBE",
@@ -33,72 +26,80 @@ export const db = getFirestore(app);
 // Initialize Auth
 export const auth = getAuth(app);
 
-// Keep track of the current user
-let currentUser: User | null = null;
+// Constants
+const ADMIN_DOC_ID = "current_admin";
 
-// Listen for auth state changes
-onAuthStateChanged(auth, (user) => {
-  currentUser = user;
-});
-
-// Helper function to ensure anonymous authentication
-export const ensureAnonymousAuth = async (): Promise<User> => {
-  if (currentUser) {
-    return currentUser;
-  }
-
-  const result = await signInAnonymously(auth);
-  currentUser = result.user;
-  return currentUser;
+// Helper function to check if admin session exists
+export const checkAdminSession = async (): Promise<boolean> => {
+  const adminDocRef = doc(db, "admin_sessions", ADMIN_DOC_ID);
+  const docSnap = await getDoc(adminDocRef);
+  return docSnap.exists();
 };
 
-// Helper function to check admin status
-export const getAdminSession = async (uid: string): Promise<boolean> => {
-  const adminSessionRef = doc(db, "admin_sessions", uid);
-  const docSnap = await getDoc(adminSessionRef);
-  return docSnap.exists();
+// Helper function to remove admin session
+export const removeAdminSession = async () => {
+  console.log("Removing admin session...");
+  const adminDocRef = doc(db, "admin_sessions", ADMIN_DOC_ID);
+  try {
+    await deleteDoc(adminDocRef);
+    console.log("Admin session removed successfully");
+  } catch (error) {
+    console.error("Error removing admin session:", error);
+    throw error;
+  }
 };
 
 // Helper function to set admin session
 export const setAdminSession = async (isAdmin: boolean) => {
-  if (!currentUser) throw new Error("No authenticated user");
+  const user = auth.currentUser;
+  if (!user) throw new Error("No authenticated user");
+
+  const adminDocRef = doc(db, "admin_sessions", ADMIN_DOC_ID);
 
   if (isAdmin) {
-    // Create admin session document
-    await setDoc(doc(db, "admin_sessions", currentUser.uid), {
+    console.log("Creating admin session...");
+    // First ensure no existing admin session
+    await removeAdminSession().catch(console.error);
+
+    // Create new admin session document
+    await setDoc(adminDocRef, {
+      uid: user.uid,
       createdAt: new Date(),
       lastActive: new Date(),
     });
+    console.log("Admin session created successfully");
   } else {
-    try {
-      // Remove admin session document
-      await deleteDoc(doc(db, "admin_sessions", currentUser.uid));
-    } catch (error) {
-      console.error("Error removing admin session:", error);
-    }
+    await removeAdminSession();
   }
 };
 
-// Helper function to clean up user session
+// Helper function to clean up current user session
 export const cleanupUserSession = async () => {
-  if (!currentUser) return;
+  const user = auth.currentUser;
+  if (!user) {
+    console.log("No user to clean up");
+    return;
+  }
 
   try {
-    // First remove admin session if it exists
-    await setAdminSession(false);
-
-    // Delete the anonymous user
-    await deleteUser(currentUser);
+    console.log("Cleaning up user session...");
+    // Remove admin session if it exists
+    await removeAdminSession();
 
     // Sign out
     await signOut(auth);
+    console.log("User signed out successfully");
 
-    // Clear the current user
-    currentUser = null;
+    // Add a small delay to ensure Firestore operations complete
+    await new Promise((resolve) => setTimeout(resolve, 500));
   } catch (error) {
     console.error("Error during session cleanup:", error);
-    // Even if deletion fails, try to sign out
-    await signOut(auth);
-    currentUser = null;
+    // Even if admin session removal fails, try to sign out
+    try {
+      await signOut(auth);
+      console.log("User signed out after error");
+    } catch (signOutError) {
+      console.error("Error during sign out:", signOutError);
+    }
   }
 };

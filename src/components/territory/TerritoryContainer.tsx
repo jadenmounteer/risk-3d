@@ -1,6 +1,8 @@
 import React from "react";
 import { TerritoryNode } from "./TerritoryNode";
 import { useGame } from "../../contexts/GameContext";
+import { Territory } from "../../types/territory";
+import { Player } from "../../types/game";
 
 export const TerritoryContainer: React.FC = () => {
   const { gameState, gameService, isLoading } = useGame();
@@ -25,8 +27,9 @@ export const TerritoryContainer: React.FC = () => {
       case "DEPLOY":
         if (
           gameState.territories[territoryId].teamId ===
-          gameState.players.find((p) => p.id === gameState.currentTurnPlayerId)
-            ?.teamId
+          gameState.players.find(
+            (p: Player) => p.id === gameState.currentTurnPlayerId
+          )?.teamId
         ) {
           await gameService.placeTroops(territoryId, 1);
         }
@@ -37,18 +40,21 @@ export const TerritoryContainer: React.FC = () => {
 
   return (
     <>
-      {Object.values(gameState.territories).map((territory) => (
-        <TerritoryNode
-          key={territory.id}
-          territory={territory}
-          isCurrentPlayer={
-            gameState.players.find(
-              (p) => p.id === gameState.currentTurnPlayerId
-            )?.teamId === territory.teamId
-          }
-          onTerritoryClick={handleTerritoryClick}
-        />
-      ))}
+      {Object.entries(gameState.territories).map(([id, territory]) => {
+        const typedTerritory = territory as Territory;
+        return (
+          <TerritoryNode
+            key={id}
+            territory={typedTerritory}
+            isCurrentPlayer={
+              gameState.players.find(
+                (p: Player) => p.id === gameState.currentTurnPlayerId
+              )?.teamId === typedTerritory.teamId
+            }
+            onTerritoryClick={handleTerritoryClick}
+          />
+        );
+      })}
     </>
   );
 };
