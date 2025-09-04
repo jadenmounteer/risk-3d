@@ -1,5 +1,10 @@
 import { doc, setDoc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
-import { db, ensureAnonymousAuth, setAdminSession } from "./firebase";
+import {
+  db,
+  ensureAnonymousAuth,
+  setAdminSession,
+  cleanupUserSession,
+} from "./firebase";
 import { GameService, GameState, Player } from "../types/game";
 import { TeamId } from "../types/territory";
 import { TERRITORIES } from "../constants/territories";
@@ -45,7 +50,7 @@ export const firebaseGameService: GameService = {
   logoutAdmin: async () => {
     try {
       isAdminLoggedIn = false;
-      await setAdminSession(false);
+      await cleanupUserSession();
     } catch (error) {
       console.error("Logout failed:", error);
       throw error;
