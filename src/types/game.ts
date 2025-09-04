@@ -4,7 +4,7 @@ export interface Player {
   id: string;
   name: string;
   teamId: TeamId;
-  bonusTroops: number; // Accumulated from sprint performance
+  bonusTroops: number;
 }
 
 export interface GameState {
@@ -14,7 +14,7 @@ export interface GameState {
   players: Player[];
   territories: Record<string, Territory>;
   winner?: string;
-  lastUpdated: number; // Timestamp for tracking changes
+  lastUpdated: number;
 }
 
 // Admin-specific actions
@@ -33,8 +33,8 @@ export interface AdminActions {
 }
 
 export interface GameService {
-  // Admin authentication
-  loginAdmin: (email: string, password: string) => Promise<void>;
+  // Admin authentication - simplified to just password
+  loginAdmin: (password: string) => Promise<void>;
   logoutAdmin: () => Promise<void>;
   isAdmin: () => boolean;
 

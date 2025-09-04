@@ -3,11 +3,11 @@
   top: 0;
   right: 20px;
   z-index: 1000;
-  width: 300px; /* Set fixed width to match panel */
+  width: 300px;
 }
 
 .admin-toggle {
-  position: relative; /* Changed from absolute */
+  position: relative;
   margin: 0 auto;
   background: rgba(0, 0, 0, 0.8);
   color: white;
@@ -71,6 +71,17 @@
   border: 1px solid #444;
   background: #222;
   color: white;
+}
+
+.admin-panel input.error,
+.admin-login input.error {
+  border-color: #ff4444;
+}
+
+.error-message {
+  color: #ff4444;
+  font-size: 12px;
+  margin-top: -5px;
 }
 
 .admin-panel button,

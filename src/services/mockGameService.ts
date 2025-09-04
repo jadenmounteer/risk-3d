@@ -25,14 +25,17 @@ const notifySubscribers = () => {
 // Mock admin state
 let isAdminLoggedIn = false;
 
+// Mock admin password - in real app this would be in Firebase
+const MOCK_ADMIN_PASSWORD = "admin123";
+
 export const mockGameService: GameService = {
   // Admin authentication
-  loginAdmin: async (email: string, password: string) => {
+  loginAdmin: async (password: string) => {
     // Mock login - in real app this would validate with Firebase
-    if (email === "admin@example.com" && password === "password") {
+    if (password === MOCK_ADMIN_PASSWORD) {
       isAdminLoggedIn = true;
     } else {
-      throw new Error("Invalid credentials");
+      throw new Error("Invalid password");
     }
   },
 

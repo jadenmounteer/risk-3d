@@ -7,18 +7,21 @@ import "./AdminPanel.css";
 export const AdminPanel: React.FC = () => {
   const { gameService, gameState } = useGame();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<TeamId>("red");
   const [bonusTroops, setBonusTroops] = useState(0);
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+  const [loginError, setLoginError] = useState<string>("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError("");
     try {
-      await gameService.loginAdmin(email, password);
+      await gameService.loginAdmin(password);
+      setPassword(""); // Clear password after successful login
     } catch (error) {
+      setLoginError("Invalid password");
       console.error("Login failed:", error);
     }
   };
@@ -59,20 +62,16 @@ export const AdminPanel: React.FC = () => {
       <div className={`admin-panel ${isExpanded ? "expanded" : ""}`}>
         {!gameService.isAdmin() ? (
           <div className="admin-login">
-            <h2>Admin Login</h2>
+            <h2>Admin Access</h2>
             <form onSubmit={handleLogin}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-              />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder="Enter admin password"
+                className={loginError ? "error" : ""}
               />
+              {loginError && <div className="error-message">{loginError}</div>}
               <button type="submit">Login</button>
             </form>
           </div>

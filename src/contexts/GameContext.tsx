@@ -7,6 +7,7 @@ interface GameContextType {
   gameState: GameState | null;
   isLoading: boolean;
   error: Error | null;
+  setError: (error: Error | null) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -36,6 +37,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     gameState,
     isLoading,
     error,
+    setError,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
