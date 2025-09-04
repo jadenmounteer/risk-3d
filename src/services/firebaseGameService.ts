@@ -5,7 +5,7 @@ import { TeamId } from "../types/territory";
 import { TERRITORIES } from "../constants/territories";
 
 // Constants
-const GAME_DOC_ID = "current_game"; // Since we only have one game
+const GAME_DOC_ID = "current_game";
 const ADMIN_PASSWORD_HASH =
   "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // This is 'admin' hashed
 
@@ -25,26 +25,39 @@ let isAdminLoggedIn = false;
 export const firebaseGameService: GameService = {
   // Admin authentication
   loginAdmin: async (password: string) => {
-    const hashedPassword = await hashPassword(password);
-    if (hashedPassword === ADMIN_PASSWORD_HASH) {
-      await setAdminSession(true);
-      isAdminLoggedIn = true;
-    } else {
-      throw new Error("Invalid password");
+    try {
+      // First ensure we have anonymous auth
+      await ensureAnonymousAuth();
+
+      const hashedPassword = await hashPassword(password);
+      if (hashedPassword === ADMIN_PASSWORD_HASH) {
+        await setAdminSession(true);
+        isAdminLoggedIn = true;
+      } else {
+        throw new Error("Invalid password");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
     }
   },
 
   logoutAdmin: async () => {
-    isAdminLoggedIn = false;
-    await setAdminSession(false);
+    try {
+      isAdminLoggedIn = false;
+      await setAdminSession(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      throw error;
+    }
   },
 
   isAdmin: () => isAdminLoggedIn,
 
   // Game state
   getGameState: async () => {
-    await ensureAnonymousAuth();
-    const gameDoc = await getDoc(doc(db, "games", GAME_DOC_ID));
+    const gameRef = doc(db, "games", GAME_DOC_ID);
+    const gameDoc = await getDoc(gameRef);
     return gameDoc.data() as GameState;
   },
 
@@ -64,8 +77,6 @@ export const firebaseGameService: GameService = {
   // Game actions
   claimTerritory: async (territoryId: string, playerId: string) => {
     if (!isAdminLoggedIn) throw new Error("Admin only action");
-    await ensureAnonymousAuth();
-
     const gameRef = doc(db, "games", GAME_DOC_ID);
     const gameDoc = await getDoc(gameRef);
     const gameState = gameDoc.data() as GameState;
@@ -85,8 +96,6 @@ export const firebaseGameService: GameService = {
 
   placeTroops: async (territoryId: string, troops: number) => {
     if (!isAdminLoggedIn) throw new Error("Admin only action");
-    await ensureAnonymousAuth();
-
     const gameRef = doc(db, "games", GAME_DOC_ID);
     const gameDoc = await getDoc(gameRef);
     const gameState = gameDoc.data() as GameState;
@@ -104,14 +113,11 @@ export const firebaseGameService: GameService = {
     troops: number
   ) => {
     if (!isAdminLoggedIn) throw new Error("Admin only action");
-    await ensureAnonymousAuth();
-
     const gameRef = doc(db, "games", GAME_DOC_ID);
     const gameDoc = await getDoc(gameRef);
     const gameState = gameDoc.data() as GameState;
 
     const fromTerritory = gameState.territories[fromTerritoryId];
-
     await updateDoc(gameRef, {
       [`territories.${fromTerritoryId}.troops`]: fromTerritory.troops - troops,
       [`territories.${toTerritoryId}`]: {
@@ -129,8 +135,6 @@ export const firebaseGameService: GameService = {
     troops: number
   ) => {
     if (!isAdminLoggedIn) throw new Error("Admin only action");
-    await ensureAnonymousAuth();
-
     const gameRef = doc(db, "games", GAME_DOC_ID);
     const gameDoc = await getDoc(gameRef);
     const gameState = gameDoc.data() as GameState;
@@ -146,8 +150,6 @@ export const firebaseGameService: GameService = {
 
   endTurn: async () => {
     if (!isAdminLoggedIn) throw new Error("Admin only action");
-    await ensureAnonymousAuth();
-
     const gameRef = doc(db, "games", GAME_DOC_ID);
     const gameDoc = await getDoc(gameRef);
     const gameState = gameDoc.data() as GameState;
@@ -167,8 +169,6 @@ export const firebaseGameService: GameService = {
   admin: {
     addPlayer: async (name: string, teamId: TeamId) => {
       if (!isAdminLoggedIn) throw new Error("Admin only action");
-      await ensureAnonymousAuth();
-
       const gameRef = doc(db, "games", GAME_DOC_ID);
       const gameDoc = await getDoc(gameRef);
       const gameState = gameDoc.data() as GameState;
@@ -189,8 +189,6 @@ export const firebaseGameService: GameService = {
 
     removePlayer: async (playerId: string) => {
       if (!isAdminLoggedIn) throw new Error("Admin only action");
-      await ensureAnonymousAuth();
-
       const gameRef = doc(db, "games", GAME_DOC_ID);
       const gameDoc = await getDoc(gameRef);
       const gameState = gameDoc.data() as GameState;
@@ -203,8 +201,6 @@ export const firebaseGameService: GameService = {
 
     addBonusTroops: async (playerId: string, amount: number) => {
       if (!isAdminLoggedIn) throw new Error("Admin only action");
-      await ensureAnonymousAuth();
-
       const gameRef = doc(db, "games", GAME_DOC_ID);
       const gameDoc = await getDoc(gameRef);
       const gameState = gameDoc.data() as GameState;
@@ -226,8 +222,6 @@ export const firebaseGameService: GameService = {
 
     startNewGame: async () => {
       if (!isAdminLoggedIn) throw new Error("Admin only action");
-      await ensureAnonymousAuth();
-
       const gameRef = doc(db, "games", GAME_DOC_ID);
       const gameDoc = await getDoc(gameRef);
       const currentState = gameDoc.data() as GameState;
@@ -249,8 +243,6 @@ export const firebaseGameService: GameService = {
 
     setGamePhase: async (phase: GameState["phase"]) => {
       if (!isAdminLoggedIn) throw new Error("Admin only action");
-      await ensureAnonymousAuth();
-
       const gameRef = doc(db, "games", GAME_DOC_ID);
       await updateDoc(gameRef, {
         phase,
@@ -260,8 +252,6 @@ export const firebaseGameService: GameService = {
 
     resetGame: async () => {
       if (!isAdminLoggedIn) throw new Error("Admin only action");
-      await ensureAnonymousAuth();
-
       const gameRef = doc(db, "games", GAME_DOC_ID);
       await setDoc(gameRef, {
         id: GAME_DOC_ID,
