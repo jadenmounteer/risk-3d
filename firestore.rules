@@ -10,7 +10,7 @@ service cloud.firestore {
     // Game document rules
     match /games/{gameId} {
       // Anyone can read the game state
-      allow read: if true;  // Changed to allow all reads
+      allow read: if true;
       // Only admins can write
       allow write: if isAdmin();
     }

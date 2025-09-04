@@ -6,7 +6,6 @@ import { TERRITORIES } from "../constants/territories";
 
 // Constants
 const GAME_DOC_ID = "current_game"; // Since we only have one game
-const ADMIN_DOC_ID = "admin_config";
 const ADMIN_PASSWORD_HASH =
   "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // This is 'admin' hashed
 
@@ -36,8 +35,8 @@ export const firebaseGameService: GameService = {
   },
 
   logoutAdmin: async () => {
-    await setAdminSession(false);
     isAdminLoggedIn = false;
+    await setAdminSession(false);
   },
 
   isAdmin: () => isAdminLoggedIn,

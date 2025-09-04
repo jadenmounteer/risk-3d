@@ -5,6 +5,7 @@ import {
   signInAnonymously,
   onAuthStateChanged,
   User,
+  signOut,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -27,31 +28,17 @@ export const auth = getAuth(app);
 
 // Helper function to ensure anonymous authentication
 export const ensureAnonymousAuth = async (): Promise<User> => {
-  return new Promise((resolve, reject) => {
-    // Check if already authenticated
-    if (auth.currentUser) {
-      resolve(auth.currentUser);
-      return;
-    }
+  if (auth.currentUser) {
+    return auth.currentUser;
+  }
 
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe(); // Stop listening once we get a response
-      if (user) {
-        resolve(user);
-      } else {
-        // Try to sign in anonymously
-        signInAnonymously(auth)
-          .then((result) => resolve(result.user))
-          .catch(reject);
-      }
-    });
-  });
+  const result = await signInAnonymously(auth);
+  return result.user;
 };
 
 // Helper function to set admin session
 export const setAdminSession = async (isAdmin: boolean) => {
-  const user = await ensureAnonymousAuth();
+  const user = auth.currentUser;
   if (!user) throw new Error("No authenticated user");
 
   if (isAdmin) {
@@ -61,7 +48,12 @@ export const setAdminSession = async (isAdmin: boolean) => {
       lastActive: new Date(),
     });
   } else {
-    // Remove admin session document
-    await deleteDoc(doc(db, "admin_sessions", user.uid));
+    try {
+      // Remove admin session document
+      await deleteDoc(doc(db, "admin_sessions", user.uid));
+    } finally {
+      // Always sign out when removing admin session
+      await signOut(auth);
+    }
   }
 };

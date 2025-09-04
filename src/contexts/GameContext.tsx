@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { GameService, GameState } from "../types/game";
 import { firebaseGameService } from "../services/firebaseGameService";
-import { initializeFirestore } from "../services/initializeFirestore";
-import { ensureAnonymousAuth } from "../services/firebase";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { db } from "../services/firebase";
+import { TERRITORIES } from "../constants/territories";
 
 interface GameContextType {
   gameService: GameService;
@@ -18,48 +19,58 @@ interface GameProviderProps {
   children: React.ReactNode;
 }
 
+// Default game state that everyone sees
+const DEFAULT_GAME_STATE: GameState = {
+  id: "current_game",
+  currentTurnPlayerId: "",
+  phase: "SETUP",
+  players: [],
+  territories: Object.fromEntries(
+    TERRITORIES.map((territory) => [
+      territory.id,
+      { ...territory, troops: 0, teamId: "unoccupied" },
+    ])
+  ),
+  lastUpdated: Date.now(),
+};
+
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
-  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Handle authentication and initialization
+  // Subscribe to game state changes
   useEffect(() => {
-    const initialize = async () => {
-      try {
-        setIsLoading(true);
-        // Ensure we have anonymous authentication
-        await ensureAnonymousAuth();
-        // Initialize Firestore with initial game state
-        await initializeFirestore();
-        setIsInitialized(true);
-      } catch (err) {
-        console.error("Error during initialization:", err);
-        setError(
-          err instanceof Error ? err : new Error("Failed to initialize")
+    const gameRef = doc(db, "games", "current_game");
+
+    // First, ensure the document exists with default state
+    setDoc(gameRef, DEFAULT_GAME_STATE, { merge: true })
+      .then(() => {
+        // Then subscribe to changes
+        const unsubscribe = onSnapshot(
+          gameRef,
+          (doc) => {
+            if (doc.exists()) {
+              setGameState(doc.data() as GameState);
+            }
+            setIsLoading(false);
+            setError(null);
+          },
+          (error) => {
+            console.error("Error subscribing to game state:", error);
+            setError(error as Error);
+            setIsLoading(false);
+          }
         );
-        setIsLoading(false);
-      }
-    };
 
-    initialize();
+        return () => unsubscribe();
+      })
+      .catch((error) => {
+        console.error("Error ensuring default game state:", error);
+        setError(error as Error);
+        setIsLoading(false);
+      });
   }, []);
-
-  // Subscribe to game state once initialized
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const unsubscribe = firebaseGameService.subscribeToGameState(
-      (state: GameState) => {
-        setGameState(state);
-        setIsLoading(false);
-        setError(null);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [isInitialized]);
 
   const value = {
     gameService: firebaseGameService,
