@@ -1,6 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, deleteDoc } from "firebase/firestore";
-import { getAuth, signInAnonymously } from "firebase/auth";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  User,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBAdXNYeq2Hqtw7PiNGkdX6DVvg5mWkNBE",
@@ -21,11 +26,27 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // Helper function to ensure anonymous authentication
-export const ensureAnonymousAuth = async () => {
-  if (!auth.currentUser) {
-    await signInAnonymously(auth);
-  }
-  return auth.currentUser;
+export const ensureAnonymousAuth = async (): Promise<User> => {
+  return new Promise((resolve, reject) => {
+    // Check if already authenticated
+    if (auth.currentUser) {
+      resolve(auth.currentUser);
+      return;
+    }
+
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe(); // Stop listening once we get a response
+      if (user) {
+        resolve(user);
+      } else {
+        // Try to sign in anonymously
+        signInAnonymously(auth)
+          .then((result) => resolve(result.user))
+          .catch(reject);
+      }
+    });
+  });
 };
 
 // Helper function to set admin session

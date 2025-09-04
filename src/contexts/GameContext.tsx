@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { GameService, GameState } from "../types/game";
 import { firebaseGameService } from "../services/firebaseGameService";
+import { initializeFirestore } from "../services/initializeFirestore";
+import { ensureAnonymousAuth } from "../services/firebase";
 
 interface GameContextType {
   gameService: GameService;
@@ -20,23 +22,44 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Handle authentication and initialization
   useEffect(() => {
+    const initialize = async () => {
+      try {
+        setIsLoading(true);
+        // Ensure we have anonymous authentication
+        await ensureAnonymousAuth();
+        // Initialize Firestore with initial game state
+        await initializeFirestore();
+        setIsInitialized(true);
+      } catch (err) {
+        console.error("Error during initialization:", err);
+        setError(
+          err instanceof Error ? err : new Error("Failed to initialize")
+        );
+        setIsLoading(false);
+      }
+    };
+
+    initialize();
+  }, []);
+
+  // Subscribe to game state once initialized
+  useEffect(() => {
+    if (!isInitialized) return;
+
     const unsubscribe = firebaseGameService.subscribeToGameState(
       (state: GameState) => {
         setGameState(state);
         setIsLoading(false);
+        setError(null);
       }
     );
 
-    // Initialize game if it doesn't exist
-    firebaseGameService.admin?.startNewGame().catch((error) => {
-      console.error("Error initializing game:", error);
-      setError(error);
-    });
-
     return () => unsubscribe();
-  }, []);
+  }, [isInitialized]);
 
   const value = {
     gameService: firebaseGameService,
