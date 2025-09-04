@@ -2,8 +2,14 @@ import React, { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
-import { TerritoryNodeProps } from "../../types/territory";
+import { Territory } from "../../types/territory";
 import { TEAM_COLORS } from "../../types/territory";
+
+interface TerritoryNodeProps {
+  territory: Territory;
+  isCurrentPlayer: boolean;
+  onTerritoryClick: (territoryId: string) => void;
+}
 
 /**
  * TerritoryNode Component
@@ -12,26 +18,25 @@ import { TEAM_COLORS } from "../../types/territory";
  * - A glowing ring indicating territory control
  * - Troop count when territory is occupied
  * - Click interaction for territory management
- *
- * @param {TerritoryNodeProps} props - The component props
+ * - Visual feedback for current player's territories
  */
 export const TerritoryNode: React.FC<TerritoryNodeProps> = ({
   territory,
+  isCurrentPlayer,
   onTerritoryClick,
 }) => {
-  // Refs for animation and interaction
   const glowRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
 
-  // Get the color based on the controlling team
   const color = TEAM_COLORS[territory.teamId];
   const isOccupied = territory.teamId !== "unoccupied";
 
-  // Animate the glow effect
+  // Animate the glow effect - more pronounced for current player's territories
   useFrame((state) => {
     if (glowRef.current) {
+      const pulseIntensity = isCurrentPlayer ? 0.2 : 0.1;
       glowRef.current.scale.setScalar(
-        1 + Math.sin(state.clock.elapsedTime * 2) * 0.1
+        1 + Math.sin(state.clock.elapsedTime * 2) * pulseIntensity
       );
     }
   });
@@ -41,7 +46,7 @@ export const TerritoryNode: React.FC<TerritoryNodeProps> = ({
     event: THREE.Event & { stopPropagation: () => void }
   ) => {
     event.stopPropagation();
-    onTerritoryClick?.(territory.id);
+    onTerritoryClick(territory.id);
   };
 
   return (
@@ -56,7 +61,7 @@ export const TerritoryNode: React.FC<TerritoryNodeProps> = ({
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={0.9}
+          opacity={isCurrentPlayer ? 1 : 0.9}
           depthWrite={false}
           side={THREE.DoubleSide}
         />
@@ -68,7 +73,7 @@ export const TerritoryNode: React.FC<TerritoryNodeProps> = ({
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={0.2}
+          opacity={isCurrentPlayer ? 0.3 : 0.2}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}
@@ -81,7 +86,7 @@ export const TerritoryNode: React.FC<TerritoryNodeProps> = ({
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={0.1}
+          opacity={isCurrentPlayer ? 0.15 : 0.1}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}

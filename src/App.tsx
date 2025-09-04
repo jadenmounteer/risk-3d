@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import {
   OrbitControls,
@@ -7,7 +7,9 @@ import {
   AccumulativeShadows,
   RandomizedLight,
 } from "@react-three/drei";
+import * as THREE from "three";
 import { TerritoryContainer } from "./components/territory/TerritoryContainer";
+import { GameProvider } from "./contexts/GameContext";
 import "./App.css";
 
 function RiskTable() {
@@ -24,17 +26,10 @@ function RiskTable() {
 }
 
 function Scene() {
-  const handleTerritoryClick = (territoryId: string) => {
-    console.log(`Clicked territory: ${territoryId}`);
-    // We'll implement game logic here later
-  };
-
   return (
     <>
       <RiskTable />
-
-      {/* Render all territory nodes */}
-      <TerritoryContainer onTerritoryClick={handleTerritoryClick} />
+      <TerritoryContainer />
 
       {/* Lighting setup */}
       <ambientLight intensity={0.4} />
@@ -75,16 +70,21 @@ function Scene() {
 useGLTF.preload(process.env.PUBLIC_URL + "/models/risk-table.glb");
 
 function App() {
+  // For now, we'll use a mock game ID. Later this will come from Firebase
+  const gameId = "mock-game";
+
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "#1a1a1a" }}>
-      <Canvas camera={{ position: [0, 5, 10], fov: 50 }} shadows>
-        <color attach="background" args={["#1a1a1a"]} />
-        <fog attach="fog" args={["#1a1a1a", 8, 30]} />
-        <Suspense fallback={null}>
-          <Scene />
-        </Suspense>
-      </Canvas>
-    </div>
+    <GameProvider gameId={gameId}>
+      <div style={{ width: "100vw", height: "100vh", background: "#1a1a1a" }}>
+        <Canvas camera={{ position: [0, 5, 10], fov: 50 }} shadows>
+          <color attach="background" args={["#1a1a1a"]} />
+          <fog attach="fog" args={["#1a1a1a", 8, 30]} />
+          <Suspense fallback={null}>
+            <Scene />
+          </Suspense>
+        </Canvas>
+      </div>
+    </GameProvider>
   );
 }
 
